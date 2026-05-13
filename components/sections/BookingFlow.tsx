@@ -40,6 +40,8 @@ export function BookingFlow() {
   const [clientData, setClientData] = useState<ClientData>(initialClientData);
   const [errors, setErrors] = useState<Errors>({});
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [bookingError, setBookingError] = useState("");
 
   const selectedService = services.find((service) => service.id === selectedServiceId);
   const filteredSpecialists = useMemo(
@@ -109,8 +111,49 @@ export function BookingFlow() {
     setStep(5);
   }
 
-  function confirmBooking() {
-    setIsSuccess(true);
+  async function confirmBooking() {
+    if (!selectedService || !selectedSpecialist || !selectedDate || !selectedTime) {
+      setBookingError("Wybierz usługę, specjalistę, datę i godzinę wizyty.");
+      return;
+    }
+
+    if (!validateClientData()) return;
+
+    setIsSending(true);
+    setBookingError("");
+
+    try {
+      const response = await fetch("/api/booking", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          serviceId: selectedService.id,
+          specialistId: selectedSpecialist.id,
+          dateId: selectedDate.id,
+          timeId: selectedTime.id,
+          client: clientData
+        })
+      });
+
+      const result = (await response.json().catch(() => null)) as
+        | { message?: string }
+        | null;
+
+      if (!response.ok) {
+        setBookingError(
+          result?.message ?? "Nie udało się wysłać potwierdzenia rezerwacji."
+        );
+        return;
+      }
+
+      setIsSuccess(true);
+    } catch {
+      setBookingError("Nie udało się połączyć z serwerem rezerwacji.");
+    } finally {
+      setIsSending(false);
+    }
   }
 
   function resetBooking() {
@@ -122,6 +165,8 @@ export function BookingFlow() {
     setClientData(initialClientData);
     setErrors({});
     setIsSuccess(false);
+    setIsSending(false);
+    setBookingError("");
   }
 
   return (
@@ -310,6 +355,8 @@ export function BookingFlow() {
                           time={selectedTime}
                           clientData={clientData}
                           onConfirm={confirmBooking}
+                          isSending={isSending}
+                          error={bookingError}
                         />
                       ) : null}
                     </>
@@ -474,7 +521,9 @@ function SummaryRow({ label, value }: { label: string; value?: string }) {
 }
 
 type ConfirmationProps = SummaryProps & {
-  onConfirm: () => void;
+  onConfirm: () => Promise<void>;
+  isSending: boolean;
+  error: string;
 };
 
 function Confirmation({
@@ -483,7 +532,9 @@ function Confirmation({
   date,
   time,
   clientData,
-  onConfirm
+  onConfirm,
+  isSending,
+  error
 }: ConfirmationProps) {
   return (
     <div>
@@ -499,8 +550,18 @@ function Confirmation({
         <Info label="Klient" value={clientData.name} />
         <Info label="Kontakt" value={clientData.email} />
       </div>
-      <Button className="mt-6 w-full sm:w-auto" onClick={onConfirm} icon>
-        Potwierdź wizytę
+      {error ? (
+        <p className="mt-5 rounded-2xl bg-red-50 p-4 text-sm font-semibold text-red-700">
+          {error}
+        </p>
+      ) : null}
+      <Button
+        className="mt-6 w-full sm:w-auto"
+        onClick={onConfirm}
+        disabled={isSending}
+        icon={!isSending}
+      >
+        {isSending ? "Wysyłanie..." : "Potwierdź wizytę"}
       </Button>
     </div>
   );
