@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Star } from "lucide-react";
-import { specialists } from "@/data/booking";
+import { getAvailabilityLabel, specialists } from "@/data/booking";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
 export function SpecialistsSection() {
@@ -43,7 +43,7 @@ export function SpecialistsSection() {
                 {specialist.role}
               </p>
               <p className="mt-5 rounded-2xl bg-mint-50 p-3 text-sm font-semibold text-mint-700">
-                {specialist.availability}
+                {getAvailabilityLabel({ specialistId: specialist.id })}
               </p>
             </motion.article>
           ))}

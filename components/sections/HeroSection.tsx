@@ -2,11 +2,16 @@
 
 import { motion } from "framer-motion";
 import { CalendarDays, CheckCircle2, Clock, MoveRight } from "lucide-react";
-import { services, trustItems } from "@/data/booking";
+import { getNextAvailability, services, specialists, trustItems } from "@/data/booking";
 import { Button } from "@/components/ui/Button";
 
 export function HeroSection() {
   const featured = services[0];
+  const featuredSpecialist = specialists.find((specialist) => specialist.id === "anna");
+  const featuredAvailability = getNextAvailability({
+    serviceId: featured.id,
+    specialistId: "anna"
+  });
   const scrollToSection = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
   };
@@ -101,7 +106,7 @@ export function HeroSection() {
                   <div className="min-w-0 flex-1">
                     <h3 className="font-semibold text-graphite-900">{featured.name}</h3>
                     <p className="mt-1 text-sm leading-6 text-graphite-500">
-                      {featured.duration} · {featured.price} zł · Anna Wysocka
+                      {featured.duration} · {featured.price} zł · {featuredSpecialist?.name}
                     </p>
                   </div>
                   <CheckCircle2 className="h-5 w-5 text-mint-500" aria-hidden="true" />
@@ -112,12 +117,18 @@ export function HeroSection() {
                 <div className="rounded-2xl border border-graphite-900/8 bg-white p-4">
                   <CalendarDays className="mb-3 h-5 w-5 text-mint-700" aria-hidden="true" />
                   <p className="text-xs text-graphite-500">Termin</p>
-                  <p className="font-semibold text-graphite-900">Czwartek, 14 maja</p>
+                  <p className="font-semibold text-graphite-900">
+                    {featuredAvailability
+                      ? `${featuredAvailability.date.day}, ${featuredAvailability.date.label}`
+                      : "Brak terminu"}
+                  </p>
                 </div>
                 <div className="rounded-2xl border border-graphite-900/8 bg-white p-4">
                   <Clock className="mb-3 h-5 w-5 text-mint-700" aria-hidden="true" />
                   <p className="text-xs text-graphite-500">Godzina</p>
-                  <p className="font-semibold text-graphite-900">16:30</p>
+                  <p className="font-semibold text-graphite-900">
+                    {featuredAvailability?.time.label ?? "-"}
+                  </p>
                 </div>
               </div>
 
@@ -125,7 +136,7 @@ export function HeroSection() {
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <p className="text-sm text-white/70">Do potwierdzenia</p>
-                    <p className="text-2xl font-semibold">180 zł</p>
+                    <p className="text-2xl font-semibold">{featured.price} zł</p>
                   </div>
                   <div className="grid h-11 w-11 place-items-center rounded-full bg-mint-500">
                     <MoveRight aria-hidden="true" />

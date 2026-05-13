@@ -3,7 +3,13 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle2, ChevronLeft, ChevronRight, Mail, Phone, User } from "lucide-react";
 import { FormEvent, useMemo, useState } from "react";
-import { bookingDates, services, specialists, timeSlots } from "@/data/booking";
+import {
+  getAvailabilityLabel,
+  getAvailableDates,
+  getAvailableTimeSlots,
+  services,
+  specialists
+} from "@/data/booking";
 import type { BookingDate, Service, Specialist, TimeSlot } from "@/data/booking";
 import { Button } from "@/components/ui/Button";
 import { ProgressSteps } from "@/components/ui/ProgressSteps";
@@ -46,14 +52,29 @@ export function BookingFlow() {
   const selectedSpecialist = specialists.find(
     (specialist) => specialist.id === selectedSpecialistId
   );
-  const selectedDate = bookingDates.find((date) => date.id === selectedDateId);
-  const selectedTime = timeSlots.find((time) => time.id === selectedTimeId);
+  const availableDates =
+    selectedServiceId && selectedSpecialistId
+      ? getAvailableDates({
+          serviceId: selectedServiceId,
+          specialistId: selectedSpecialistId
+        })
+      : [];
+  const availableTimeSlots =
+    selectedServiceId && selectedSpecialistId && selectedDateId
+      ? getAvailableTimeSlots({
+          serviceId: selectedServiceId,
+          specialistId: selectedSpecialistId,
+          dateId: selectedDateId
+        })
+      : [];
+  const selectedDate = availableDates.find((date) => date.id === selectedDateId);
+  const selectedTime = availableTimeSlots.find((time) => time.id === selectedTimeId);
 
   function canContinue() {
     if (step === 0) return Boolean(selectedServiceId);
     if (step === 1) return Boolean(selectedSpecialistId);
-    if (step === 2) return Boolean(selectedDateId);
-    if (step === 3) return Boolean(selectedTimeId);
+    if (step === 2) return Boolean(selectedDate);
+    if (step === 3) return Boolean(selectedTime);
     if (step === 4) return validateClientData();
     return true;
   }
@@ -137,6 +158,8 @@ export function BookingFlow() {
                           onSelect={(service) => {
                             setSelectedServiceId(service.id);
                             setSelectedSpecialistId("");
+                            setSelectedDateId("");
+                            setSelectedTimeId("");
                           }}
                           renderItem={(service) => (
                             <>
@@ -169,7 +192,11 @@ export function BookingFlow() {
                           title="Wybierz specjalistę"
                           items={filteredSpecialists}
                           selectedId={selectedSpecialistId}
-                          onSelect={(specialist) => setSelectedSpecialistId(specialist.id)}
+                          onSelect={(specialist) => {
+                            setSelectedSpecialistId(specialist.id);
+                            setSelectedDateId("");
+                            setSelectedTimeId("");
+                          }}
                           renderItem={(specialist) => (
                             <>
                               <div className="flex items-center justify-between gap-4">
@@ -186,7 +213,10 @@ export function BookingFlow() {
                                 </span>
                               </div>
                               <p className="mt-4 text-sm font-medium text-graphite-700">
-                                {specialist.availability}
+                                {getAvailabilityLabel({
+                                  specialistId: specialist.id,
+                                  serviceId: selectedServiceId
+                                })}
                               </p>
                             </>
                           )}
@@ -196,9 +226,12 @@ export function BookingFlow() {
                       {step === 2 ? (
                         <ChoiceGrid<BookingDate>
                           title="Wybierz datę"
-                          items={bookingDates}
+                          items={availableDates}
                           selectedId={selectedDateId}
-                          onSelect={(date) => setSelectedDateId(date.id)}
+                          onSelect={(date) => {
+                            setSelectedDateId(date.id);
+                            setSelectedTimeId("");
+                          }}
                           compact
                           renderItem={(date) => (
                             <>
@@ -214,7 +247,7 @@ export function BookingFlow() {
                       {step === 3 ? (
                         <ChoiceGrid<TimeSlot>
                           title="Wybierz godzinę"
-                          items={timeSlots}
+                          items={availableTimeSlots}
                           selectedId={selectedTimeId}
                           onSelect={(time) => setSelectedTimeId(time.id)}
                           compact

@@ -22,7 +22,6 @@ export type Specialist = {
   name: string;
   role: string;
   rating: number;
-  availability: string;
   serviceIds: string[];
 };
 
@@ -35,6 +34,18 @@ export type BookingDate = {
 export type TimeSlot = {
   id: string;
   label: string;
+};
+
+export type AvailabilitySlot = {
+  serviceId: string;
+  specialistId: string;
+  dateId: string;
+  timeId: string;
+};
+
+export type NextAvailability = {
+  date: BookingDate;
+  time: TimeSlot;
 };
 
 export type Testimonial = {
@@ -93,7 +104,6 @@ export const specialists: Specialist[] = [
     name: "Anna Wysocka",
     role: "Fizjoterapeutka ortopedyczna",
     rating: 4.9,
-    availability: "Najbliżej: dziś 16:30",
     serviceIds: ["fizjoterapia", "konsultacja", "masaz"]
   },
   {
@@ -101,7 +111,6 @@ export const specialists: Specialist[] = [
     name: "Michał Rataj",
     role: "Trener medyczny",
     rating: 4.8,
-    availability: "Najbliżej: jutro 09:00",
     serviceIds: ["trening-medyczny", "konsultacja"]
   },
   {
@@ -109,12 +118,12 @@ export const specialists: Specialist[] = [
     name: "Karolina Lewandowska",
     role: "Terapia manualna i powrót po kontuzji",
     rating: 5.0,
-    availability: "Najbliżej: piątek 12:15",
     serviceIds: ["fizjoterapia", "masaz"]
   }
 ];
 
 export const bookingDates: BookingDate[] = [
+  { id: "2026-05-13", label: "13 maja", day: "Środa" },
   { id: "2026-05-14", label: "14 maja", day: "Czwartek" },
   { id: "2026-05-15", label: "15 maja", day: "Piątek" },
   { id: "2026-05-18", label: "18 maja", day: "Poniedziałek" },
@@ -128,6 +137,138 @@ export const timeSlots: TimeSlot[] = [
   { id: "16:30", label: "16:30" },
   { id: "18:00", label: "18:00" }
 ];
+
+export const availabilitySlots: AvailabilitySlot[] = [
+  {
+    serviceId: "fizjoterapia",
+    specialistId: "anna",
+    dateId: "2026-05-13",
+    timeId: "16:30"
+  },
+  {
+    serviceId: "konsultacja",
+    specialistId: "anna",
+    dateId: "2026-05-14",
+    timeId: "10:30"
+  },
+  {
+    serviceId: "masaz",
+    specialistId: "anna",
+    dateId: "2026-05-15",
+    timeId: "18:00"
+  },
+  {
+    serviceId: "trening-medyczny",
+    specialistId: "michal",
+    dateId: "2026-05-14",
+    timeId: "09:00"
+  },
+  {
+    serviceId: "konsultacja",
+    specialistId: "michal",
+    dateId: "2026-05-15",
+    timeId: "12:15"
+  },
+  {
+    serviceId: "fizjoterapia",
+    specialistId: "karolina",
+    dateId: "2026-05-15",
+    timeId: "12:15"
+  },
+  {
+    serviceId: "masaz",
+    specialistId: "karolina",
+    dateId: "2026-05-18",
+    timeId: "16:30"
+  },
+  {
+    serviceId: "fizjoterapia",
+    specialistId: "anna",
+    dateId: "2026-05-19",
+    timeId: "10:30"
+  }
+];
+
+const todayDateId = "2026-05-13";
+const tomorrowDateId = "2026-05-14";
+
+export function getAvailableTimeSlots({
+  serviceId,
+  specialistId,
+  dateId
+}: {
+  serviceId: string;
+  specialistId: string;
+  dateId: string;
+}) {
+  const slotIds = availabilitySlots
+    .filter(
+      (slot) =>
+        slot.serviceId === serviceId &&
+        slot.specialistId === specialistId &&
+        slot.dateId === dateId
+    )
+    .map((slot) => slot.timeId);
+
+  return timeSlots.filter((timeSlot) => slotIds.includes(timeSlot.id));
+}
+
+export function getAvailableDates({
+  serviceId,
+  specialistId
+}: {
+  serviceId: string;
+  specialistId: string;
+}) {
+  const dateIds = availabilitySlots
+    .filter((slot) => slot.serviceId === serviceId && slot.specialistId === specialistId)
+    .map((slot) => slot.dateId);
+
+  return bookingDates.filter((date) => dateIds.includes(date.id));
+}
+
+export function getNextAvailability({
+  specialistId,
+  serviceId
+}: {
+  specialistId: string;
+  serviceId?: string;
+}): NextAvailability | undefined {
+  const nextSlot = availabilitySlots.find(
+    (slot) =>
+      slot.specialistId === specialistId && (!serviceId || slot.serviceId === serviceId)
+  );
+
+  if (!nextSlot) return undefined;
+
+  const date = bookingDates.find((bookingDate) => bookingDate.id === nextSlot.dateId);
+  const time = timeSlots.find((timeSlot) => timeSlot.id === nextSlot.timeId);
+
+  if (!date || !time) return undefined;
+
+  return { date, time };
+}
+
+export function getAvailabilityLabel({
+  specialistId,
+  serviceId
+}: {
+  specialistId: string;
+  serviceId?: string;
+}) {
+  const availability = getNextAvailability({ specialistId, serviceId });
+
+  if (!availability) return "Brak wolnych terminów";
+
+  const relativeDate =
+    availability.date.id === todayDateId
+      ? "dziś"
+      : availability.date.id === tomorrowDateId
+        ? "jutro"
+        : `${availability.date.day.toLowerCase()}, ${availability.date.label}`;
+
+  return `Najbliżej: ${relativeDate} ${availability.time.label}`;
+}
 
 export const testimonials: Testimonial[] = [
   {
