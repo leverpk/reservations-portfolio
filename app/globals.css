@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  background: #fbf7ef;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at top left, rgba(217, 242, 231, 0.72), transparent 34rem),
+    linear-gradient(180deg, #fbf7ef 0%, #ffffff 44%, #f7faf6 100%);
+  color: #171a18;
+}
+
+::selection {
+  background: #d9f2e7;
+  color: #171a18;
+}
+
+.focus-ring {
+  @apply focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mint-500;
+}
